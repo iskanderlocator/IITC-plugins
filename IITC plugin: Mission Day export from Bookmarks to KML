@@ -1,0 +1,140 @@
+// ==UserScript==
+// @id             iitc-plugin-KML@MDExpFrBkmrToKML
+// @name           IITC plugin: Mission Day export from Bookmarks to KML
+// @category       Tweaks
+// @version        1.0.0.1
+// @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
+// @description    Exports bookmarks to KML format for Mission Day map.
+// @include        https://*.ingress.com/intel*
+// @include        http://*.ingress.com/intel*
+// @match          https://*.ingress.com/intel*
+// @match          http://*.ingress.com/intel*
+// @grant          none
+// ==/UserScript==
+
+function wrapper() {
+    // in case IITC is not available yet, define the base plugin object
+    if (typeof window.plugin !== "function") {
+        window.plugin = function() {};
+    }
+
+    // base context for plugin
+    window.plugin.ingressMDtoKMLexporter = function() {};
+    var self = window.plugin.ingressMDtoKMLexporter;
+    // custom dialog wrapper with more flexibility
+
+    self.CreateListOfMissionsBookmarks=function(){
+	var colors=[];
+	colors.push('caa461','829ce5','9fa657','8d5d22','45c097','c788d0','ce7058','8a285d','80bc6f','437124','5d74c6','b24258','e4905a','822716','b79e42','4a3281','db6497','d35760','bb519b','729429','be6a27','8e3d99','9ac859','55c068','d04f41','d174d5','c1a830','716fdb','d6902c','a6bc3a')
+  var k=1;
+	var bookmarks = JSON.parse(localStorage[plugin.bookmarks.KEY_STORAGE]);
+	var o = [];
+	var missions = [];
+	var list_of_portal =[];
+	var styles = [];
+	missions.push('    <Folder>');
+	missions.push('      <name>Missions list</name>');
+	list_of_portal.push('    <Folder>');
+	list_of_portal.push('      <name>Portals list</name>');
+	for (var i in bookmarks.portals){
+		if(bookmarks.portals[i].label!='Others'){
+		missions.push('      <Placemark> ');
+		missions.push('        <name>'+bookmarks.portals[i].label+'</name>');
+		missions.push('        <LineString>');
+		missions.push('        <coordinates>');
+		var color=colors.pop();
+		var p_num=1;
+		var first_portal;
+			for (var j in bookmarks.portals[i].bkmrk){
+			if (p_num==1){
+				first_portal= bookmarks.portals[i].bkmrk[j];
+			}
+			var latlng=bookmarks.portals[i].bkmrk[j].latlng.split(/, ?/);
+			list_of_portal.push('      <Placemark> ');
+			list_of_portal.push('        <name>' +k+'.'+p_num +' ' + bookmarks.portals[i].bkmrk[j].label + '</name>');
+			list_of_portal.push('        <description><![CDATA[Description: <br>Mission #: '+k+'<br>Mission Title: '+bookmarks.portals[i].label+'<br>Portal order: '+p_num+'<br>Portal URL: https://www.ingress.com/intel?ll='+bookmarks.portals[i].bkmrk[j].latlng+'&amp;z=17&amp;pll='+bookmarks.portals[i].bkmrk[j].latlng+'<br>Navigation to portal:<br>Google Maps - https://maps.google.com/maps?daddr='+bookmarks.portals[i].bkmrk[j].latlng+'<br>Apple Maps - http://maps.apple.com/?q='+bookmarks.portals[i].bkmrk[j].latlng+'<br>Waze - http://waze.to/?navigate=yes&amp;ll='+bookmarks.portals[i].bkmrk[j].latlng+']]></description>');
+			list_of_portal.push('        <styleUrl>#'+i+'_Mission_'+k+'_portal'+'</styleUrl>');
+			list_of_portal.push('        <Point>')
+			list_of_portal.push('          <coordinates>'+parseFloat(latlng[1])+', ' + parseFloat(latlng[0])+',0</coordinates>');
+			list_of_portal.push('        </Point>');
+			list_of_portal.push('      </Placemark> ');
+			missions.push('          '+parseFloat(latlng[1])+',' + parseFloat(latlng[0])+',0');
+			p_num=p_num+1;
+			}
+		missions.push('        </coordinates>');
+		missions.push('        </LineString>');
+		missions.push('        <description><![CDATA[Mission #: '+k+'<br>Start portal:<br>'+first_portal.label+'<br> https://www.ingress.com/intel?ll='+first_portal.latlng+'&amp;z=17&amp;pll='+first_portal.latlng+'<br>Google Maps - https://maps.google.com/maps?daddr='+first_portal.latlng+'<br>Apple Maps - http://maps.apple.com/?q='+first_portal.latlng+'<br>Waze - http://waze.to/?navigate=yes&amp;ll='+first_portal.latlng+']]></description>');
+            missions.push('        <styleUrl>#'+i+'_Mission_'+k+'</styleUrl>');
+		missions.push('      </Placemark>');
+		styles.push('      <Style id="'+i+'_Mission_'+k+'_portal">');
+		styles.push('        <IconStyle>');
+        styles.push('        <color>ff'+color+'</color>');
+        styles.push('        <scale>1</scale>');
+        styles.push('        <Icon>');
+        styles.push('          <href>http://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>');
+        styles.push('        </Icon>');
+        styles.push('        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>');
+        styles.push('        </IconStyle>');
+        styles.push('      </Style>');
+		styles.push('      <Style id="'+i+'_Mission_'+k+'">');
+		styles.push('        <LineStyle>');
+		styles.push('        <color>ff'+color+'</color>');
+		styles.push('        <width>1.8</width>');
+		styles.push('        </LineStyle>');
+		styles.push('        <BalloonStyle>');
+		styles.push('        <text><![CDATA[<h3>$[name]</h3><br><h2>$[description]</h2>]]></text>');
+		styles.push('        </BalloonStyle>');
+		styles.push('      </Style>');
+		k=k+1;
+		}
+	}
+	missions.push('    </Folder>');
+	list_of_portal.push('    </Folder>');
+	o=o.concat(styles);
+	o=o.concat(missions);
+	o=o.concat(list_of_portal);
+	return o;
+}
+    self.gen = function gen() {
+var o = [];
+
+        o.push('<?xml version="1.0" encoding="UTF-8"?>');
+        o.push('<kml xmlns="http://www.opengis.net/kml/2.2">');
+        o.push('  <Document>');
+        o.push('    <name>Mission Day Map</name>');
+		o=o.concat(self.CreateListOfMissionsBookmarks());
+	    o.push('  </Document>');
+        o.push('</kml>');
+		var dialog = window.dialog({
+            title: "Export Bookmarks to KML for Mission Day map",
+            // body must be wrapped in an outer tag (e.g. <div>content</div>)
+            html: '<textarea id="idKMLexporter" rows="30" style="width: 100%;"></textarea>'
+        }).parent();
+        $(".ui-dialog-buttonpane", dialog).remove();
+                dialog.css("width", "600px")
+            .css("top", ($(window).height() - dialog.height()) / 2)
+            .css("left", ($(window).width() - dialog.width()) / 2);
+        $("#idKMLexporter").val(o.join("\n"));
+		return dialog;
+    };
+    // setup function called by IITC
+    self.setup = function init() {
+        // add controls to toolbox
+        var link = $("<a onclick=\"window.plugin.ingressMDtoKMLexporter.gen();\" title=\"Export Bookmarks to KML for Mission Day map.\">MD Export</a>");
+        $("#toolbox").append(link);
+        // delete setup to ensure init can't be run again
+        delete self.setup;
+    };
+    // IITC plugin setup
+    if (window.iitcLoaded && typeof self.setup === "function") {
+        self.setup();
+    } else if (window.bootPlugins) {
+        window.bootPlugins.push(self.setup);
+    } else {
+        window.bootPlugins = [self.setup];
+    }
+}
+// inject plugin into page
+var script = document.createElement("script");
+script.appendChild(document.createTextNode("(" + wrapper + ")();"));
+(document.body || document.head || document.documentElement).appendChild(script);
